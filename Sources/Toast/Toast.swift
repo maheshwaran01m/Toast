@@ -1,5 +1,6 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
+// Toast
+//
+// Copyright © 2023 MAHESHWARAN
 
 import SwiftUI
 import Combine
@@ -91,86 +92,86 @@ public struct ToastView<V: View>: ViewModifier {
     resetTimer()
   }
 }
-  // MARK: - ToastOptions
+// MARK: - ToastOptions
+
+public struct ToastStyle {
   
-  public struct ToastStyle {
-    
-    public var alignment: Alignment
-    public var hide: TimeInterval?
-    public var animation: Animation?
-    public var style: Style
-    public var tapToDismiss: Bool
-    
-    public init(
-      alignment: Alignment = .bottom,
-      hide: TimeInterval? = 2.0,
-      animation: Animation? = nil,
-      tapToDismiss: Bool = true,
-      style: Style = .slide) {
-        self.alignment = alignment
-        self.hide = hide
-        self.animation = animation
-        self.tapToDismiss = tapToDismiss
-        self.style = style
-      }
-    
-    static public let slide = ToastStyle(
-      alignment: .bottom,
-      hide: 3.0,
-      tapToDismiss: true,
-      style: .slide)
-    
-    static public let fade = ToastStyle(
-      alignment: .bottom,
-      hide: 3.0,
-      tapToDismiss: true,
-      style: .fade)
-    
-    static public let scale = ToastStyle(
-      alignment: .bottom,
-      hide: 3.0,
-      tapToDismiss: true,
-      style: .scale)
+  public var alignment: Alignment
+  public var hide: TimeInterval?
+  public var animation: Animation?
+  public var style: Style
+  public var tapToDismiss: Bool
+  
+  public init(
+    alignment: Alignment = .bottom,
+    hide: TimeInterval? = 2.0,
+    animation: Animation? = nil,
+    tapToDismiss: Bool = true,
+    style: Style = .slide) {
+      self.alignment = alignment
+      self.hide = hide
+      self.animation = animation
+      self.tapToDismiss = tapToDismiss
+      self.style = style
+    }
+  
+  static public let slide = ToastStyle(
+    alignment: .bottom,
+    hide: 3.0,
+    tapToDismiss: true,
+    style: .slide)
+  
+  static public let fade = ToastStyle(
+    alignment: .bottom,
+    hide: 3.0,
+    tapToDismiss: true,
+    style: .fade)
+  
+  static public let scale = ToastStyle(
+    alignment: .bottom,
+    hide: 3.0,
+    tapToDismiss: true,
+    style: .scale)
+}
+
+// MARK: - Toast Style
+
+public enum Style {
+  case fade, slide, scale
+}
+
+struct ToastFade: ViewModifier {
+  @Binding var isPresented: Bool
+  let style: ToastStyle?
+  
+  func body(content: Content) -> some View {
+    content
+      .transition(.opacity.animation(style?.animation ?? .linear))
+      .opacity(isPresented ? 1 : 0)
+      .zIndex(1.0)
   }
+}
+
+struct ToastSide: ViewModifier {
+  @Binding var isPresented: Bool
+  let style: ToastStyle?
   
-  // MARK: - Toast Style
-  
-  public enum Style {
-    case fade, slide, scale
-  }
-  
-  struct ToastFade: ViewModifier {
-    @Binding var isPresented: Bool
-    let style: ToastStyle?
-    
-    func body(content: Content) -> some View {
-      content
-        .transition(.opacity.animation(style?.animation ?? .linear))
-        .opacity(isPresented ? 1 : 0)
-        .zIndex(1.0)
+  private var transitionEdge: Edge {
+    guard let edge = style?.alignment else { return .top }
+    switch edge {
+    case .top, .topLeading, .topTrailing: return .top
+    case .bottom, .bottomLeading, .bottomTrailing: return .bottom
+    default: return .top
     }
   }
   
-  struct ToastSide: ViewModifier {
-    @Binding var isPresented: Bool
-    let style: ToastStyle?
-    
-    private var transitionEdge: Edge {
-      guard let edge = style?.alignment else { return .top }
-      switch edge {
-      case .top, .topLeading, .topTrailing: return .top
-      case .bottom, .bottomLeading, .bottomTrailing: return .bottom
-      default: return .top
-      }
-    }
-    
-    func body(content: Content) -> some View {
-      content
-        .transition(.move(edge: transitionEdge).combined(with: .opacity))
-        .animation(style?.animation ?? .default, value: isPresented)
-        .opacity(isPresented ? 1 : 0)
-        .zIndex(1.0)
-    }
+  func body(content: Content) -> some View {
+    content
+      .transition(.move(edge: transitionEdge).combined(with: .opacity))
+      .animation(style?.animation ?? .default, value: isPresented)
+      .opacity(isPresented ? 1 : 0)
+      .zIndex(1.0)
+  }
 }
 
 struct ToastScale: ViewModifier {
