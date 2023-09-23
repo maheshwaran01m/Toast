@@ -7,7 +7,6 @@ import Combine
 
 public struct ToastView<V: View>: ViewModifier {
   
-  @Environment(\.dismiss) private var dismiss
   @Binding var isPresented: Bool
   @State private var timer: Timer?
   @State private var isActive = false
@@ -75,7 +74,7 @@ public struct ToastView<V: View>: ViewModifier {
       timer?.invalidate()
       timer = nil
       isPresented = false
-      dismiss()
+      style.dismiss?()
     }
   }
   
@@ -101,18 +100,21 @@ public struct ToastStyle {
   public var animation: Animation?
   public var style: Style
   public var tapToDismiss: Bool
+  public var dismiss: (() -> Void)?
   
   public init(
     alignment: Alignment = .bottom,
     hide: TimeInterval? = 2.0,
     animation: Animation? = nil,
     tapToDismiss: Bool = true,
+    dismiss: (() -> Void)? = nil,
     style: Style = .slide) {
       self.alignment = alignment
       self.hide = hide
       self.animation = animation
       self.tapToDismiss = tapToDismiss
       self.style = style
+      self.dismiss = dismiss
     }
   
   static public let slide = ToastStyle(
