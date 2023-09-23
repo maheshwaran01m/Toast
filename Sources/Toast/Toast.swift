@@ -2,12 +2,15 @@
 // https://docs.swift.org/swift-book
 
 import SwiftUI
+import Combine
 
 public struct ToastView<V: View>: ViewModifier {
   
   @Environment(\.dismiss) private var dismiss
   @Binding var isPresented: Bool
   @State private var timer: Timer?
+  @State private var isActive = false
+  @State private var currentState = false
   
   private let toastContent: V
   private let style: ToastStyle
@@ -44,11 +47,14 @@ public struct ToastView<V: View>: ViewModifier {
       }
       .onTapGesture(perform: tapToDismiss)
       .onAppear(perform: setUpView)
+      .onDisappear { isActive.toggle() }
+      .onReceive(Just(isPresented), perform: update)
     }
   }
   
   private func setUpView() {
     resetTimer()
+    isActive = true
   }
   
   private func resetTimer() {
@@ -76,6 +82,13 @@ public struct ToastView<V: View>: ViewModifier {
     if style.tapToDismiss {
       dismissToastView()
     }
+  }
+  
+  private func update(_ state: Bool) {
+    guard state != currentState else { return }
+    currentState = state
+    guard isActive, currentState else { return }
+    resetTimer()
   }
 }
   // MARK: - ToastOptions
@@ -182,5 +195,42 @@ public extension View {
     @ViewBuilder content: @escaping () -> V) -> some View {
       modifier(ToastView(isPresented, style: style, content: content))
     }
+  func showToast<V: View, Item: Identifiable>(
+    _ item: Binding<Item?>?,
+    style: ToastStyle = .slide,
+    @ViewBuilder content: @escaping () -> V) -> some View {
+      
+      let binding = Binding<Bool> {
+        item?.wrappedValue != nil
+      } set: { value in
+        if !value { item?.wrappedValue = nil }
+      }
+      return modifier(ToastView(binding, style: style, content: content))
+    }
+  
+  func showToast(_ item: Binding<ToastMessage?>) -> some View {
+    self.showToast(item) {
+      HStack {
+        Text(item.wrappedValue?.message ?? "")
+          .padding()
+          .background(
+            Capsule()
+              .foregroundStyle((item.wrappedValue?.style ?? .green).opacity(0.3))
+          )
+      }
+    }
+  }
 }
 
+// MARK: - ToastMessage
+
+public struct ToastMessage: Identifiable, Equatable {
+  public var id: String = UUID().uuidString
+  public var message: String
+  public var style: Color
+  
+  public init(_ message: String, style: Color = .blue) {
+    self.message = message
+    self.style = style
+  }
+}
